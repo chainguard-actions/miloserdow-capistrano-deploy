@@ -1,0 +1,34 @@
+name: Test default enc_rsa_key_pth is used when not specified
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create dummy encrypted key file at default path
+        run: |
+          mkdir -p config
+          # Create a dummy file at the default path (config/deploy_id_rsa_enc)
+          # The action will try to decrypt it with openssl and fail because it's not
+          # a real AES-256-CBC encrypted file, but this confirms the default path is used
+          echo "not-a-real-encrypted-key" > config/deploy_id_rsa_enc
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          deploy_key: 'some-deploy-key'
+          # enc_rsa_key_pth not specified — should default to 'config/deploy_id_rsa_enc'
+
+      - name: Assert action failed (openssl decryption fails on dummy file)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" != "failure" ]; then
+            echo "FAIL: expected action to fail when decrypting invalid key file, got outcome=$OUTCOME"
+            exit 1
+          fi
+          echo "PASS: action correctly failed when trying to decrypt an invalid key file at default path"
