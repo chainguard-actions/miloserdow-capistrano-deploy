@@ -9,6 +9,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 | Version | Tag | Upstream commit |
 |---------|-----|-----------------|
 | v1.3 | [`v1.3`](https://github.com/chainguard-actions/miloserdow-capistrano-deploy/tree/v1.3) | [`5f2b069`](https://github.com/miloserdow/capistrano-deploy/commit/5f2b06966b96b7c058ba071014fa5d3837597ace) |
+| v3 | [`v3`](https://github.com/chainguard-actions/miloserdow-capistrano-deploy/tree/v3) | [`24f6a92`](https://github.com/miloserdow/capistrano-deploy/commit/24f6a92bc02b5a708c92095566335f46b411afc9) |
 
 ## Privacy
 
