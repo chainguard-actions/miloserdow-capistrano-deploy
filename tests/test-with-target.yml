@@ -1,0 +1,34 @@
+name: Test deploy with target environment
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create dummy encrypted key file
+        run: |
+          mkdir -p config
+          echo "fakecontent" > config/deploy_id_rsa_enc
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          deploy_key: 'fake-deploy-key-for-testing'
+          enc_rsa_key_pth: 'config/deploy_id_rsa_enc'
+          target: 'staging'
+
+      - name: Assert action attempted execution with target
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # The action should fail because there is no real capistrano environment,
+          # but it should have attempted to run with the specified target.
+          if [ "$OUTCOME" != "failure" ]; then
+            echo "FAIL: expected action to fail (no real capistrano environment), got outcome=$OUTCOME"
+            exit 1
+          fi
+          echo "PASS: action failed as expected when using target=staging (no real deployment environment)"

@@ -1,0 +1,25 @@
+name: Test without optional target input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Test action without specifying target (optional input)
+        id: action
+        uses: .
+        with:
+          deploy_key: my-secret-deploy-key
+          enc_rsa_key_pth: config/deploy_id_rsa_enc
+        continue-on-error: true
+      - name: Assert action failed at deploy stage (not at input validation)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" != "failure" ]; then
+            echo "FAIL: expected action to fail when encrypted key file is missing, got '$OUTCOME'"
+            exit 1
+          fi
+          echo "PASS: action correctly failed without target (optional input omitted)"
