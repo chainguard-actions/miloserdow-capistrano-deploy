@@ -1,0 +1,39 @@
+name: Test enc_rsa_key_val writes key file and proceeds past validation
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Prepare config directory and ensure no pre-existing encrypted key file
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/config"
+          rm -f "$GITHUB_WORKSPACE/config/deploy_id_rsa_enc"
+          echo "Config directory ready, no pre-existing key file"
+
+      - id: action
+        uses: .
+        with:
+          deploy_key: 'test-deploy-key-value'
+          enc_rsa_key_val: 'U2FsdGVkX1+dummyencryptedkeyvalue=='
+          # enc_rsa_key_pth defaults to config/deploy_id_rsa_enc
+        continue-on-error: true
+
+      - name: Assert the encrypted key file was written by the action
+        run: |
+          echo "Checking for key file at: $GITHUB_WORKSPACE/config/deploy_id_rsa_enc"
+          ls -la "$GITHUB_WORKSPACE/config/" 2>/dev/null || echo "(config dir listing failed)"
+          if [ ! -f "$GITHUB_WORKSPACE/config/deploy_id_rsa_enc" ]; then
+            echo "FAIL: expected config/deploy_id_rsa_enc to be written by the action"
+            exit 1
+          fi
+          CONTENT=$(cat "$GITHUB_WORKSPACE/config/deploy_id_rsa_enc")
+          echo "key file content: $CONTENT"
+          if [ "$CONTENT" != "U2FsdGVkX1+dummyencryptedkeyvalue==" ]; then
+            echo "FAIL: key file content does not match enc_rsa_key_val"
+            exit 1
+          fi
+          echo "PASS: enc_rsa_key_val was correctly written to the key file path"

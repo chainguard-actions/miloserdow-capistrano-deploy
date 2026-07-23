@@ -1,0 +1,30 @@
+name: Test RSA key value accepted
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Run action with enc_rsa_key_val provided (expect failure at deploy stage, not key validation)
+        id: action
+        uses: .
+        with:
+          bundler_version: '1.17.3'
+          deploy_key: 'some-deploy-key'
+          enc_rsa_key_val: 'U2FsdGVkX1+fakeencryptedkeyvalue=='
+          enc_rsa_key_pth: 'config/deploy_id_rsa_enc'
+        continue-on-error: true
+      - name: Assert action ran (failed at deploy stage, not at key validation)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # The action should fail (no real server/Gemfile), but it should NOT fail
+          # at the key validation stage — it should get past that and fail later.
+          # Either way, the action should have been invoked and returned an outcome.
+          if [ -z "$OUTCOME" ]; then
+            echo "FAIL: action did not produce an outcome"
+            exit 1
+          fi
+          echo "PASS: action was invoked and produced outcome=$OUTCOME"

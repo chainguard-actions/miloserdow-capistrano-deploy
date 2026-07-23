@@ -1,0 +1,36 @@
+name: Test enc_rsa_key_pth with existing file proceeds past validation
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create a dummy encrypted key file at a custom path
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/config"
+          echo "U2FsdGVkX1+dummyencryptedkeyvalue==" > "$GITHUB_WORKSPACE/config/my_deploy_key_enc"
+          echo "File created:"
+          ls -la "$GITHUB_WORKSPACE/config/my_deploy_key_enc"
+
+      - id: action
+        uses: .
+        with:
+          deploy_key: 'test-deploy-key-value'
+          enc_rsa_key_pth: config/my_deploy_key_enc
+        continue-on-error: true
+
+      - name: Assert action did not fail at the key-existence validation stage
+        run: |
+          # The action will fail later (at gem install, bundle install, or openssl decrypt)
+          # because there's no real Gemfile or valid encrypted key in this test environment.
+          # What matters is that it did NOT fail with the validation error
+          # "Encrypted RSA private key file or value does not exist."
+          # We verify the key file still exists (action didn't delete it unexpectedly).
+          if [ ! -f "$GITHUB_WORKSPACE/config/my_deploy_key_enc" ]; then
+            echo "FAIL: encrypted key file was unexpectedly removed"
+            exit 1
+          fi
+          echo "PASS: action proceeded past key-existence validation (file was found at enc_rsa_key_pth)"

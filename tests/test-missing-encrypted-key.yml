@@ -1,0 +1,33 @@
+name: Test missing encrypted RSA key fails gracefully
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Ensure the default encrypted key path does not exist
+        run: |
+          rm -f "$GITHUB_WORKSPACE/config/deploy_id_rsa_enc"
+          echo "Ensured no pre-existing key file"
+
+      - id: action
+        uses: .
+        with:
+          deploy_key: 'some-deploy-key'
+          # enc_rsa_key_pth defaults to config/deploy_id_rsa_enc (which does not exist)
+          # enc_rsa_key_val is not provided
+        continue-on-error: true
+
+      - name: Assert action failed due to missing encrypted RSA key
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" != "failure" ]; then
+            echo "FAIL: expected action to fail when no encrypted RSA key is available, got outcome=$OUTCOME"
+            exit 1
+          fi
+          echo "PASS: action correctly failed when encrypted RSA key was missing"

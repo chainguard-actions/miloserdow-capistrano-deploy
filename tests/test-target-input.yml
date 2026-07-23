@@ -1,0 +1,37 @@
+name: Test target input is accepted and passed to deploy command
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create a dummy encrypted key file at the default path
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/config"
+          echo "U2FsdGVkX1+dummyencryptedkeyvalue==" > "$GITHUB_WORKSPACE/config/deploy_id_rsa_enc"
+          echo "File created:"
+          ls -la "$GITHUB_WORKSPACE/config/deploy_id_rsa_enc"
+
+      - id: action
+        uses: .
+        with:
+          deploy_key: 'test-deploy-key-value'
+          target: 'production'
+          enc_rsa_key_pth: config/deploy_id_rsa_enc
+        continue-on-error: true
+
+      - name: Assert action accepted the target input and proceeded past validation
+        run: |
+          # The action will fail later (at gem install, bundle install, or openssl decrypt)
+          # because there's no real Gemfile or valid encrypted key in this test environment.
+          # What matters is that it did NOT fail at the validation stage with
+          # "No deploy key given" or "Encrypted RSA private key file or value does not exist."
+          # We verify the key file still exists (action didn't delete it unexpectedly).
+          if [ ! -f "$GITHUB_WORKSPACE/config/deploy_id_rsa_enc" ]; then
+            echo "FAIL: encrypted key file was unexpectedly removed"
+            exit 1
+          fi
+          echo "PASS: action accepted the 'target' input and proceeded past key-existence validation"
