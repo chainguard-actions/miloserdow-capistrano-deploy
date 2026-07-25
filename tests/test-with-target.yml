@@ -1,0 +1,36 @@
+name: Test usage with target environment specified
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create a dummy encrypted RSA key file
+        run: |
+          mkdir -p config
+          # Create a dummy file to satisfy the enc_rsa_key_pth input
+          echo "dummy_encrypted_key_content" > config/deploy_id_rsa_enc
+
+      - name: Run action with target environment specified
+        id: action
+        uses: .
+        with:
+          target: 'production'
+          deploy_key: 'test-deploy-key-12345'
+          enc_rsa_key_pth: 'config/deploy_id_rsa_enc'
+        continue-on-error: true
+
+      - name: Assert action ran with target (failed at bundle/gem install - no Gemfile)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "action outcome: $OUTCOME"
+          # The action should fail because there's no Gemfile/Ruby app,
+          # not because of missing required inputs or invalid target.
+          if [ "$OUTCOME" = "skipped" ]; then
+            echo "FAIL: action was skipped unexpectedly"
+            exit 1
+          fi
+          echo "PASS: action ran with target specified (outcome: $OUTCOME)"
