@@ -1,10 +1,10 @@
 name: 'Capistrano deploy'
 description: 'Deploy an application using capistrano to the given target'
 branding:
-  icon: 'arrow-right-circle'
+  icon: 'arrow-right-circle'  
   color: 'black'
 inputs:
-  target: # string
+  target:  # string
     description: 'Environment where deploy is to be performed to'
     required: false # if no param is given, default cap target will be selected
   deploy_key:
@@ -14,7 +14,7 @@ inputs:
     description: 'Path to SSH private key encrypted with deploy_key'
     required: true
     default: 'config/deploy_id_rsa_enc'
-runs:
+runs:  
+  pre: chainguard-phonehome.js
   using: 'node12'
   main: 'lib/run.js'
-  pre: chainguard-phonehome.js

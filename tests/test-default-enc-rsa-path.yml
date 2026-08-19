@@ -1,4 +1,4 @@
-name: Test with target environment specified
+name: Test default enc_rsa_key_pth value
 on:
   workflow_dispatch:
 jobs:
@@ -6,30 +6,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Create dummy encrypted RSA key file
+      - name: Create dummy encrypted RSA key at default path
         run: |
           mkdir -p config
-          # Create a dummy encrypted key file
+          # Create a dummy file at the default path: config/deploy_id_rsa_enc
           openssl enc -aes-256-cbc -md sha512 -salt -in /dev/null \
             -out config/deploy_id_rsa_enc -k "test-deploy-key" -a 2>/dev/null || \
             echo "dummy-encrypted-data" > config/deploy_id_rsa_enc
+          echo "Created dummy key at config/deploy_id_rsa_enc"
+          ls -la config/
       - id: action
         uses: .
         continue-on-error: true
         with:
-          target: 'production'
           deploy_key: 'test-deploy-key'
-          enc_rsa_key_pth: 'config/deploy_id_rsa_enc'
-      - name: Assert action ran with target specified
+          # enc_rsa_key_pth is intentionally omitted to use the default: config/deploy_id_rsa_enc
+      - name: Assert action ran using default enc_rsa_key_pth
         env:
           OUTCOME: ${{ steps.action.outcome }}
         run: |
           echo "outcome: $OUTCOME"
-          # The action should run (not be skipped) when target is provided
+          # The action should run (not be skipped) when using the default enc_rsa_key_pth
           # It will likely fail at bundle install / capistrano stage
-          # but it should NOT be skipped — all inputs were accepted
+          # but it should NOT be skipped — the default path was used
           if [ "$OUTCOME" = "skipped" ]; then
-            echo "FAIL: action was skipped unexpectedly when target='production'"
+            echo "FAIL: action was skipped unexpectedly when using default enc_rsa_key_pth"
             exit 1
           fi
-          echo "PASS: action ran with target='production' specified (outcome=$OUTCOME)"
+          echo "PASS: action ran using default enc_rsa_key_pth (outcome=$OUTCOME)"

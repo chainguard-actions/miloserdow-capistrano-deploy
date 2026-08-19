@@ -1,4 +1,4 @@
-name: Test with target environment specified
+name: Test basic inputs accepted
 on:
   workflow_dispatch:
 jobs:
@@ -9,7 +9,8 @@ jobs:
       - name: Create dummy encrypted RSA key file
         run: |
           mkdir -p config
-          # Create a dummy encrypted key file
+          # Create a dummy file that simulates an encrypted key
+          # The action will fail at openssl decryption, but we verify inputs are accepted
           openssl enc -aes-256-cbc -md sha512 -salt -in /dev/null \
             -out config/deploy_id_rsa_enc -k "test-deploy-key" -a 2>/dev/null || \
             echo "dummy-encrypted-data" > config/deploy_id_rsa_enc
@@ -17,19 +18,18 @@ jobs:
         uses: .
         continue-on-error: true
         with:
-          target: 'production'
           deploy_key: 'test-deploy-key'
           enc_rsa_key_pth: 'config/deploy_id_rsa_enc'
-      - name: Assert action ran with target specified
+      - name: Assert action ran (not skipped) with valid inputs
         env:
           OUTCOME: ${{ steps.action.outcome }}
         run: |
           echo "outcome: $OUTCOME"
-          # The action should run (not be skipped) when target is provided
+          # The action should either succeed or fail (not be skipped)
           # It will likely fail at bundle install / capistrano stage
-          # but it should NOT be skipped — all inputs were accepted
+          # but it should NOT be skipped — inputs were accepted
           if [ "$OUTCOME" = "skipped" ]; then
-            echo "FAIL: action was skipped unexpectedly when target='production'"
+            echo "FAIL: action was skipped unexpectedly"
             exit 1
           fi
-          echo "PASS: action ran with target='production' specified (outcome=$OUTCOME)"
+          echo "PASS: action ran with valid inputs (outcome=$OUTCOME)"
